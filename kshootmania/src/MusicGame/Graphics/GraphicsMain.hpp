@@ -53,6 +53,8 @@ namespace MusicGame::Graphics
 		LaserCursor3DGraphics m_laserCursor3DGraphics;
 
 		std::shared_ptr<noco::Canvas> m_hudCanvas;
+		double m_hudTopSlideDistance = 0.0;
+		double m_hudBottomSlideDistance = 0.0;
 		ScoreAnimator m_scoreAnimator;
 
 		GaugePanel m_gaugePanel;

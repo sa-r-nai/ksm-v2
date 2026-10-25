@@ -3,6 +3,8 @@
 #include "GameStatus.hpp"
 #include "PlayOption.hpp"
 #include "PlayResult.hpp"
+#include "LaneVisibility.hpp"
+#include "ChartToggleTimeline.hpp"
 #include "Judgment/JudgmentMain.hpp"
 #include "Camera/HighwayTilt.hpp"
 #include "Scroll/HispeedSetting.hpp"
@@ -67,6 +69,9 @@ namespace MusicGame
 
 		const kson::ChartData m_chartData;
 		const kson::TimingCache m_timingCache;
+		const LaneVisibility m_laneVisibility;
+		const ChartToggleTimeline m_colorInversion;
+		const ChartToggleTimeline m_uiVisibility;
 
 		// プレイオプション
 		const PlayOption m_playOption;
@@ -147,6 +152,9 @@ namespace MusicGame
 		/// @brief タイミング調整オフセット
 		[[nodiscard]]
 		int32 timingAdjustOffsetMs() const;
+
+		[[nodiscard]]
+		double uiHiddenRatio() const;
 
 		void startBGMFadeOut(Duration duration);
 	};

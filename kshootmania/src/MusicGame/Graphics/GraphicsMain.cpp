@@ -340,6 +340,27 @@ namespace MusicGame::Graphics
 			{ U"hispeedValueTextEffective", Format(playOption.hispeedSetting.value) },
 			{ U"jacketFilePath", FsUtils::ResolveJacketPath(parentPath, Unicode::FromUTF8(chartData.meta.jacketFilename)) },
 		});
+
+		// レイアウト確定後の矩形から、上端・下端の外へ完全に抜ける距離を求める。
+		// 位置のパラメータ参照を使用し、文字のクリッピング領域も同時に移動する。
+		m_hudCanvas->update(noco::HitTestEnabledYN::No);
+		const double hudHeight = m_hudCanvas->size().y;
+		for (const auto& node : m_hudCanvas->children())
+		{
+			const RectF& rect = node->regionRect();
+			const bool slideUp = rect.center().y < hudHeight / 2;
+			auto& translate = node->transform().translate();
+			translate.setParamRef(slideUp ? U"uiSlideTop" : U"uiSlideBottom");
+			translate.setParamRefMode(noco::ParamRefMode::Add);
+			if (slideUp)
+			{
+				m_hudTopSlideDistance = Max(m_hudTopSlideDistance, rect.y + rect.h + 2.0);
+			}
+			else
+			{
+				m_hudBottomSlideDistance = Max(m_hudBottomSlideDistance, hudHeight - rect.y + 2.0);
+			}
+		}
 	}
 
 	void GraphicsMain::prepareMovie(double globalOffsetSec)
@@ -363,6 +384,8 @@ namespace MusicGame::Graphics
 			{ U"timingAdjustVisible", viewStatus.timingAdjustMs != 0 },
 			{ U"timingAdjustSignIndex", viewStatus.timingAdjustMs > 0 ? 1 : 0 },
 			{ U"timingAdjustNumber", Abs(viewStatus.timingAdjustMs) },
+			{ U"uiSlideTop", Vec2::Up(m_hudTopSlideDistance * viewStatus.uiHiddenRatio) },
+			{ U"uiSlideBottom", Vec2::Down(m_hudBottomSlideDistance * viewStatus.uiHiddenRatio) },
 		});
 
 		m_hudCanvas->update();
@@ -386,9 +409,37 @@ namespace MusicGame::Graphics
 			drawLayer(chartData, gameStatus, viewStatus);
 		}
 		m_highway3DGraphics.draw3D(viewStatus);
+
+		const bool isColorInverted = viewStatus.colorInversionRatio > 0.0;
+		if (isColorInverted)
+		{
+			// 背景・レーン・BT/FXを確定させてから、画面中央の円内をRGB反転する。
+			Graphics3D::Flush();
+			{
+				const ScopedRenderStates2D blend(BlendState{
+					true, Blend::InvDestColor, Blend::Zero, BlendOp::Add, Blend::Zero, Blend::One });
+				if (viewStatus.colorInversionRatio >= 1.0)
+				{
+					Scene::Rect().draw(Palette::White);
+				}
+				else
+				{
+					const Vec2 size{ Scene::Size() };
+					Circle{ size * 0.5, size.length() * 0.5 * viewStatus.colorInversionRatio }.draw(Palette::White);
+				}
+			}
+			Graphics2D::Flush();
+		}
+
+		// LASER・判定ライン・判定エフェクト・カーソルは反転後に描画する。
+		m_highway3DGraphics.drawLasers3D(viewStatus);
 		m_jdgline3DGraphics.draw3D(viewStatus);
 		m_jdgoverlay3DGraphics.draw3D(viewStatus);
 		m_laserCursor3DGraphics.draw3D(gameStatus, viewStatus, m_camera);
+		if (isColorInverted)
+		{
+			Graphics3D::Flush();
+		}
 
 		// 手前に表示する2DのHUDを描画
 		{
@@ -404,11 +455,26 @@ namespace MusicGame::Graphics
 		}
 
 		m_hudCanvas->draw();
-		m_gaugePanel.draw(viewStatus.gaugePercentage, gameStatus.currentPulse);
+		{
+			const double distance = Scene::Width() / 2.0 - Scaled(155.0) + Scaled(2.0);
+			const Transformer2D slide(Mat3x2::Translate(Vec2::Right(distance * viewStatus.uiHiddenRatio)));
+			m_gaugePanel.draw(viewStatus.gaugePercentage, gameStatus.currentPulse);
+		}
+
+		// コンボ・判定・達成表示はui_toggleの対象外とし、元の位置へ描画する。
 		m_comboOverlay.draw(gameStatus.currentTimeSec);
 		m_achievementPanel.draw(gameStatus);
-		m_laserApproachIndicator.draw(gameStatus.currentTimeSec);
-		m_moviePanel.draw();
+		{
+			const double distance = Scene::Height() - Scaled(372.0) + Scaled(2.0);
+			const Transformer2D slide(Mat3x2::Translate(Vec2::Down(distance * viewStatus.uiHiddenRatio)));
+			m_laserApproachIndicator.draw(gameStatus.currentTimeSec);
+		}
+		{
+			const RectF movieRect = m_moviePanel.regionRect();
+			const double distance = Max(movieRect.x + movieRect.w, 0.0) + Scaled(2.0);
+			const Transformer2D slide(Mat3x2::Translate(Vec2::Left(distance * viewStatus.uiHiddenRatio)));
+			m_moviePanel.draw();
+		}
 
 		// HARDゲージ落ち時の赤色オーバーレイ
 		if (gameStatus.playFinishStatus.has_value() && gameStatus.playFinishStatus->isHardFailed)

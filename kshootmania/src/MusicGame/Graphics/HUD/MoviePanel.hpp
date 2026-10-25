@@ -35,6 +35,9 @@ namespace MusicGame::Graphics
 		void draw() const;
 
 		[[nodiscard]]
+		RectF regionRect() const;
+
+		[[nodiscard]]
 		bool isEnabled() const;
 
 		void seekPosSec(SecondsF posSec);

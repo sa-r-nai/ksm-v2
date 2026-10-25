@@ -485,6 +485,8 @@
     <ClInclude Include="src\MusicGame\Judgment\JudgmentDefines.hpp" />
     <ClInclude Include="src\MusicGame\GameDefines.hpp" />
     <ClInclude Include="src\MusicGame\GameMain.hpp" />
+    <ClInclude Include="src\MusicGame\LaneVisibility.hpp" />
+    <ClInclude Include="src\MusicGame\ChartToggleTimeline.hpp" />
     <ClInclude Include="src\MusicGame\GameStatus.hpp" />
     <ClInclude Include="src\MusicGame\Judgment\JudgmentHandler.hpp" />
     <ClInclude Include="src\MusicGame\Judgment\JudgmentMain.hpp" />

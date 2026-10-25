@@ -201,6 +201,9 @@ namespace MusicGame
 		m_gameStatus.currentPulseForButtonJudgment = currentPulseForButtonJudgment;
 		m_gameStatus.currentPulseForLaserJudgment = currentPulseForLaserJudgment;
 		m_gameStatus.currentBPM = currentBPM;
+		m_viewStatus.laneHiddenRatio = m_laneVisibility.hiddenRatioAt(currentTimeSec);
+		m_viewStatus.colorInversionRatio = m_colorInversion.valueAt(currentTimeSec);
+		m_viewStatus.uiHiddenRatio = m_uiVisibility.valueAt(currentTimeSec);
 
 		// 視点変更を更新
 		// (CamStatusにノーツイベントによる値が相対的に反映されるので、判定の更新より先に実行する必要がある)
@@ -263,6 +266,9 @@ namespace MusicGame
 		, m_parentPath(FileSystem::ParentPath(createInfo.chartFilePath))
 		, m_chartData(LoadChartDataWithTurn(createInfo, &m_noteArrangement, &m_sRandomFXAudioMapping, &m_laserCurvedPulses))
 		, m_timingCache(kson::CreateTimingCache(m_chartData.beat))
+		, m_laneVisibility(m_chartData, m_timingCache)
+		, m_colorInversion(m_chartData, m_timingCache, "color_invert")
+		, m_uiVisibility(m_chartData, m_timingCache, "ui_toggle")
 		, m_playOption(createInfo.playOption)
 		, m_judgmentMain(
 			m_chartData,
@@ -386,6 +392,11 @@ namespace MusicGame
 
 		// 描画実行
 		m_graphicsMain.draw(m_chartData, m_laserCurvedPulses, m_timingCache, m_gameStatus, m_viewStatus, highwayScrollContext, m_bgm.duration());
+	}
+
+	double GameMain::uiHiddenRatio() const
+	{
+		return m_viewStatus.uiHiddenRatio;
 	}
 
 	void GameMain::lockForExit()

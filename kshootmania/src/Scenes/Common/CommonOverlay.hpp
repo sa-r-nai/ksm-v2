@@ -5,6 +5,7 @@ class CommonOverlay
 {
 private:
 	std::shared_ptr<noco::Canvas> m_canvas;
+	Vec2 m_slideOffset = Vec2::Zero();
 
 	/// @brief Backボタンクリックを長押しで反応させる場合の必要時間(noneの場合は即時反応)
 	Optional<Duration> m_backButtonClickHoldDuration = none;
@@ -25,6 +26,8 @@ public:
 	void update(noco::HitTestEnabledYN hitTestEnabled);
 
 	void draw() const;
+
+	void setSlideOffset(const Vec2& offset);
 
 	void setBackButtonVisible(bool visible);
 

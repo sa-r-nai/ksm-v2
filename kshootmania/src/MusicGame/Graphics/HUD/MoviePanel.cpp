@@ -248,6 +248,13 @@ namespace MusicGame::Graphics
 		}
 	}
 
+	RectF MoviePanel::regionRect() const
+	{
+		const Vec2 center{ Scene::Width() / 2.0 + Scaled(kVideoOffsetFromCenterX + kVideoWidth / 2), Scaled(kVideoBaseY + kVideoHeight / 2) };
+		const Vec2 size = Scaled(Vec2{ kFrameWidth, kFrameHeight });
+		return RectF{ center - size / 2, size };
+	}
+
 	bool MoviePanel::isEnabled() const
 	{
 		return m_enabled && m_movie;

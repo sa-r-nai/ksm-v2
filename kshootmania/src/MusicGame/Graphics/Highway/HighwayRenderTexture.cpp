@@ -26,12 +26,18 @@ namespace MusicGame::Graphics
 		}
 	}
 
-	HighwayRenderTexture::HighwayRenderTexture()
+	HighwayRenderTexture::HighwayRenderTexture(bool createBaseTextures)
 		: m_additiveTexture(kHighwayTextureSizeWide)
 		, m_invMultiplyTexture(kHighwayTextureSizeWide)
-		, m_additiveBaseTexture(CreateBaseTexture(kTextureColumnMain, Palette::Black))
-		, m_invMultiplyBaseTexture(CreateBaseTexture(kTextureColumnSub, Palette::Black))
+		, m_additiveBaseTexture(createBaseTextures ? CreateBaseTexture(kTextureColumnMain, Palette::Black) : RenderTexture{})
+		, m_invMultiplyBaseTexture(createBaseTextures ? CreateBaseTexture(kTextureColumnSub, Palette::Black) : RenderTexture{})
 	{
+	}
+
+	void HighwayRenderTexture::clear() const
+	{
+		m_additiveTexture.clear(Palette::Black);
+		m_invMultiplyTexture.clear(Palette::Black);
 	}
 
 	void HighwayRenderTexture::draw3D(const DynamicMesh& mesh) const
@@ -55,6 +61,27 @@ namespace MusicGame::Graphics
 	const RenderTexture& HighwayRenderTexture::invMultiplyTexture() const
 	{
 		return m_invMultiplyTexture;
+	}
+
+	void HighwayRenderTexture::clearHiddenLane(double hiddenRatio) const
+	{
+		if (hiddenRatio <= 0.0)
+		{
+			return;
+		}
+
+		// 奥から判定ラインへ向かってレーンと光沢を消す。黒は両ブレンド方式の中立色。
+		// 小節線・ノーツ・キービームはこの処理の後に描画する。
+		const RectF hiddenArea{ 0, 0, kHighwayTextureSizeWide.x, kHighwayTextureSize.y * Clamp(hiddenRatio, 0.0, 1.0) };
+		const ScopedRenderStates2D renderState(BlendState::Opaque);
+		{
+			const ScopedRenderTarget2D renderTarget(m_additiveTexture);
+			hiddenArea.draw(Palette::Black);
+		}
+		{
+			const ScopedRenderTarget2D renderTarget(m_invMultiplyTexture);
+			hiddenArea.draw(Palette::Black);
+		}
 	}
 
 	void HighwayRenderTexture::drawBaseTexture(double centerSplit) const

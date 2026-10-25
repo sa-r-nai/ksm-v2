@@ -145,9 +145,9 @@ void PlayScene::update()
 		Cursor::RequestStyle(CursorStyle::Hidden);
 	}
 
-	m_commonOverlay.update(noco::HitTestEnabledYN{ !isFadingIn() && !isFadingOut() && InputUtils::IsUIMouseInputEnabled() });
-
 	const auto startFadeOut = m_gameMain.update();
+	m_commonOverlay.setSlideOffset(Vec2::Left(Scaled(50.0) * m_gameMain.uiHiddenRatio()));
+	m_commonOverlay.update(noco::HitTestEnabledYN{ !isFadingIn() && !isFadingOut() && InputUtils::IsUIMouseInputEnabled() });
 
 	// Backボタンでリザルト画面に遷移(lockForExit中でも有効)
 	processBackButtonInput();
@@ -263,10 +263,10 @@ void PlayScene::processBackButtonInput()
 
 void PlayScene::updateFadeOut()
 {
-	m_commonOverlay.update(noco::HitTestEnabledYN::No);
-
 	// フェードアウト中もゲームの更新は継続
 	m_gameMain.update();
+	m_commonOverlay.setSlideOffset(Vec2::Left(Scaled(50.0) * m_gameMain.uiHiddenRatio()));
+	m_commonOverlay.update(noco::HitTestEnabledYN::No);
 
 	// Backボタンでフェードアウトをスキップしてリザルト画面に遷移
 	processBackButtonInput();

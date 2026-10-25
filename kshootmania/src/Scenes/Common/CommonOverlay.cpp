@@ -28,7 +28,8 @@ CommonOverlay::CommonOverlay(const Duration& backButtonClickHoldDuration)
 
 void CommonOverlay::update(noco::HitTestEnabledYN hitTestEnabled)
 {
-	m_canvas->update(hitTestEnabled);
+	const Mat3x2 slide = Mat3x2::Translate(m_slideOffset);
+	m_canvas->update(Scene::Size(), slide, slide, hitTestEnabled);
 
 	if (m_canvas->isEventFiredWithTag(U"onPressStartBackButton"))
 	{
@@ -77,6 +78,11 @@ void CommonOverlay::update(noco::HitTestEnabledYN hitTestEnabled)
 void CommonOverlay::draw() const
 {
 	m_canvas->draw();
+}
+
+void CommonOverlay::setSlideOffset(const Vec2& offset)
+{
+	m_slideOffset = offset;
 }
 
 void CommonOverlay::setBackButtonVisible(bool visible)

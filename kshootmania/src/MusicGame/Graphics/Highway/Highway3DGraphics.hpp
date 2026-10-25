@@ -17,6 +17,7 @@ namespace MusicGame::Graphics
 		const Texture m_barLineTexture;
 
 		const HighwayRenderTexture m_renderTexture;
+		mutable Optional<HighwayRenderTexture> m_laserRenderTexture;
 
 		const ButtonNoteGraphics m_buttonNoteGraphics;
 		const LaserNoteGraphics m_laserNoteGraphics;
@@ -35,5 +36,7 @@ namespace MusicGame::Graphics
 		void draw2D(const kson::ChartData& chartData, const std::array<HashSet<kson::Pulse>, kson::kNumLaserLanesSZ>& laserCurvedPulses, const PlayOption& playOption, const kson::TimingCache& timingCache, const GameStatus& gameStatus, const ViewStatus& viewStatus, const Scroll::HighwayScrollContext& highwayScrollContext) const;
 
 		void draw3D(const ViewStatus& viewStatus) const;
+
+		void drawLasers3D(const ViewStatus& viewStatus) const;
 	};
 }

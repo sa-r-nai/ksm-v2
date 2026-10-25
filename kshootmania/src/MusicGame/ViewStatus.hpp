@@ -12,6 +12,9 @@ namespace MusicGame
 
 		double tiltRadians = 0.0;
 		double tiltRadiansForBgLayer = 0.0;
+		double laneHiddenRatio = 0.0; // lane_toggleによる非表示割合(0: 全表示、1: 全非表示)
+		double colorInversionRatio = 0.0; // color_invertによる反転円の半径の割合
+		double uiHiddenRatio = 0.0; // ui_toggleによるHUDの画面外への移動割合
 
 		Camera::CamStatus camStatus;
 

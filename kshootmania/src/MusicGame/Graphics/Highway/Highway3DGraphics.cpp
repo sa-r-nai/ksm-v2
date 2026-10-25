@@ -150,6 +150,8 @@ namespace MusicGame::Graphics
 				}
 			}
 
+			m_renderTexture.clearHiddenLane(viewStatus.laneHiddenRatio);
+
 			// 小節線を描画
 			{
 				const int64 startMeasureIndex = kson::PulseToMeasureIdx(gameStatus.currentPulse, chartData.beat, timingCache) - 1;
@@ -190,8 +192,20 @@ namespace MusicGame::Graphics
 		// キービームの描画
 		m_keyBeamGraphics.draw(gameStatus, viewStatus, m_renderTexture);
 
-		// レーザーノーツの描画
-		m_laserNoteGraphics.draw(chartData, laserCurvedPulses, playOption, gameStatus, highwayScrollContext, m_renderTexture);
+		// 色反転中のLASERは別テクスチャに描画し、反転後に合成する。
+		if (viewStatus.colorInversionRatio > 0.0)
+		{
+			if (!m_laserRenderTexture)
+			{
+				m_laserRenderTexture.emplace(false);
+			}
+			m_laserRenderTexture->clear();
+			m_laserNoteGraphics.draw(chartData, laserCurvedPulses, playOption, gameStatus, highwayScrollContext, *m_laserRenderTexture);
+		}
+		else
+		{
+			m_laserNoteGraphics.draw(chartData, laserCurvedPulses, playOption, gameStatus, highwayScrollContext, m_renderTexture);
+		}
 	}
 
 	void Highway3DGraphics::draw3D(const ViewStatus& viewStatus) const
@@ -201,5 +215,18 @@ namespace MusicGame::Graphics
 		const double shiftX = viewStatus.camStatus.shiftX;
 		const Transformer3D transform(Camera::CamShiftXMatrix(shiftX) * TiltTransformMatrix(radians));
 		m_renderTexture.draw3D(m_mesh);
+	}
+
+	void Highway3DGraphics::drawLasers3D(const ViewStatus& viewStatus) const
+	{
+		if (viewStatus.colorInversionRatio <= 0.0 || !m_laserRenderTexture)
+		{
+			return;
+		}
+
+		const double radians = Math::ToRadians(viewStatus.camStatus.rotationDeg + viewStatus.camStatus.rotationDegHighway) + viewStatus.tiltRadians;
+		const double shiftX = viewStatus.camStatus.shiftX;
+		const Transformer3D transform(Camera::CamShiftXMatrix(shiftX) * TiltTransformMatrix(radians));
+		m_laserRenderTexture->draw3D(m_mesh);
 	}
 }

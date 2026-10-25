@@ -11,7 +11,9 @@ namespace MusicGame::Graphics
 		const RenderTexture m_invMultiplyBaseTexture;
 
 	public:
-		HighwayRenderTexture();
+		explicit HighwayRenderTexture(bool createBaseTextures = true);
+
+		void clear() const;
 
 		void draw3D(const DynamicMesh& mesh) const;
 
@@ -20,5 +22,7 @@ namespace MusicGame::Graphics
 		const RenderTexture& invMultiplyTexture() const;
 
 		void drawBaseTexture(double centerSplit) const;
+
+		void clearHiddenLane(double hiddenRatio) const;
 	};
 }
