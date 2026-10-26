@@ -150,7 +150,7 @@ namespace MusicGame::Graphics
 				}
 			}
 
-			m_renderTexture.clearHiddenLane(viewStatus.laneHiddenRatio);
+			m_renderTexture.applyLaneToggle(viewStatus.laneHiddenRatio, viewStatus.camStatus.centerSplit);
 
 			// 小節線を描画
 			{
@@ -187,7 +187,20 @@ namespace MusicGame::Graphics
 		}
 
 		// BT/FXノーツの描画
-		m_buttonNoteGraphics.draw(chartData, gameStatus, viewStatus, playOption, highwayScrollContext, m_renderTexture);
+		if (viewStatus.colorInversionRatio > 0.0)
+		{
+			if (!m_fxRenderTexture)
+			{
+				m_fxRenderTexture.emplace(kHighwayTextureSizeWide);
+			}
+			m_fxRenderTexture->clear(kTransparent);
+			m_buttonNoteGraphics.drawUninvertedFX(chartData, gameStatus, viewStatus, playOption, highwayScrollContext, *m_fxRenderTexture);
+			m_buttonNoteGraphics.drawBT(chartData, gameStatus, viewStatus, playOption, highwayScrollContext, m_renderTexture);
+		}
+		else
+		{
+			m_buttonNoteGraphics.draw(chartData, gameStatus, viewStatus, playOption, highwayScrollContext, m_renderTexture);
+		}
 
 		// キービームの描画
 		m_keyBeamGraphics.draw(gameStatus, viewStatus, m_renderTexture);
@@ -217,9 +230,9 @@ namespace MusicGame::Graphics
 		m_renderTexture.draw3D(m_mesh);
 	}
 
-	void Highway3DGraphics::drawLasers3D(const ViewStatus& viewStatus) const
+	void Highway3DGraphics::drawUninvertedNotes3D(const ViewStatus& viewStatus) const
 	{
-		if (viewStatus.colorInversionRatio <= 0.0 || !m_laserRenderTexture)
+		if (viewStatus.colorInversionRatio <= 0.0)
 		{
 			return;
 		}
@@ -227,6 +240,15 @@ namespace MusicGame::Graphics
 		const double radians = Math::ToRadians(viewStatus.camStatus.rotationDeg + viewStatus.camStatus.rotationDegHighway) + viewStatus.tiltRadians;
 		const double shiftX = viewStatus.camStatus.shiftX;
 		const Transformer3D transform(Camera::CamShiftXMatrix(shiftX) * TiltTransformMatrix(radians));
-		m_laserRenderTexture->draw3D(m_mesh);
+		if (m_fxRenderTexture)
+		{
+			// FXの透明部分まで色が変わらないよう、保存したアルファで合成する。
+			const ScopedRenderStates3D blendState(BlendState::Premultiplied);
+			m_mesh.draw(*m_fxRenderTexture);
+		}
+		if (m_laserRenderTexture)
+		{
+			m_laserRenderTexture->draw3D(m_mesh);
+		}
 	}
 }

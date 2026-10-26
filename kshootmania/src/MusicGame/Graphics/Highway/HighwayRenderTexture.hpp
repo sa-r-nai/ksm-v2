@@ -23,6 +23,6 @@ namespace MusicGame::Graphics
 
 		void drawBaseTexture(double centerSplit) const;
 
-		void clearHiddenLane(double hiddenRatio) const;
+		void applyLaneToggle(double transitionRatio, double centerSplit) const;
 	};
 }

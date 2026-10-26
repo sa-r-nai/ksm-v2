@@ -413,7 +413,7 @@ namespace MusicGame::Graphics
 		const bool isColorInverted = viewStatus.colorInversionRatio > 0.0;
 		if (isColorInverted)
 		{
-			// 背景・レーン・BT/FXを確定させてから、画面中央の円内をRGB反転する。
+			// 背景・レーン・BTを確定させてから、画面中央の円内をRGB反転する。
 			Graphics3D::Flush();
 			{
 				const ScopedRenderStates2D blend(BlendState{
@@ -431,8 +431,8 @@ namespace MusicGame::Graphics
 			Graphics2D::Flush();
 		}
 
-		// LASER・判定ライン・判定エフェクト・カーソルは反転後に描画する。
-		m_highway3DGraphics.drawLasers3D(viewStatus);
+		// FX・LASER・判定ライン・判定エフェクト・カーソルは反転後に描画する。
+		m_highway3DGraphics.drawUninvertedNotes3D(viewStatus);
 		m_jdgline3DGraphics.draw3D(viewStatus);
 		m_jdgoverlay3DGraphics.draw3D(viewStatus);
 		m_laserCursor3DGraphics.draw3D(gameStatus, viewStatus, m_camera);

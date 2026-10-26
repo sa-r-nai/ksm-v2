@@ -23,6 +23,12 @@ namespace MusicGame::Graphics
 		constexpr double kLongNoteStartTextureY = 1.0;
 		constexpr int32 kLongNoteStartTextureHeight = 7;
 
+		// 透明背景へFXを描く際は、RGBと併せて合成後のアルファを保存する。
+		constexpr BlendState kFXAlphaBlend{
+			true, Blend::SrcAlpha, Blend::InvSrcAlpha, BlendOp::Add, Blend::One, Blend::InvSrcAlpha };
+		constexpr BlendState kEraseFXBlend{
+			true, Blend::Zero, Blend::InvSrcAlpha, BlendOp::Add, Blend::Zero, Blend::InvSrcAlpha };
+
 		double PressedLongNoteSourceY(double currentTimeSec)
 		{
 			return (MathUtils::WrappedFmod(currentTimeSec, 0.1) < 0.05) ? kLongNoteSourceYPressed1 : kLongNoteSourceYPressed2;
@@ -35,10 +41,11 @@ namespace MusicGame::Graphics
 		}
 	}
 
-	void ButtonNoteGraphics::drawChipNotesCommon(const kson::ChartData& chartData, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target, bool isBT) const
+	void ButtonNoteGraphics::drawChipNotesCommon(const kson::ChartData& chartData, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const RenderTexture& target, bool isBT, bool eraseFX) const
 	{
-		const ScopedRenderTarget2D renderTarget(target.additiveTexture());
+		const ScopedRenderTarget2D renderTarget(target);
 		const ScopedRenderStates2D samplerState(SamplerState::ClampNearest);
+		const ScopedRenderStates2D blendState(eraseFX ? kEraseFXBlend : isBT ? Graphics2D::GetBlendState() : kFXAlphaBlend);
 
 		const std::size_t numLanes = isBT ? kson::kNumBTLanesSZ : kson::kNumFXLanesSZ;
 		for (std::size_t laneIdx = 0; laneIdx < numLanes; ++laneIdx)
@@ -103,15 +110,15 @@ namespace MusicGame::Graphics
 
 	void ButtonNoteGraphics::drawChipBTNotes(const kson::ChartData& chartData, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target) const
 	{
-		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target, true);
+		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target.additiveTexture(), true);
 	}
 
 	void ButtonNoteGraphics::drawChipFXNotes(const kson::ChartData& chartData, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target) const
 	{
-		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target, false);
+		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target.additiveTexture(), false);
 	}
 
-	void ButtonNoteGraphics::drawLongNotesCommon(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target, bool isBT) const
+	void ButtonNoteGraphics::drawLongNotesCommon(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const Scroll::HighwayScrollContext& highwayScrollContext, const RenderTexture& additiveTarget, const RenderTexture& invMultiplyTarget, bool isBT, bool eraseFX) const
 	{
 		const ScopedRenderStates2D samplerState(SamplerState::ClampNearest);
 
@@ -120,13 +127,14 @@ namespace MusicGame::Graphics
 		// scroll_speedに負の値が含まれている場合は描画範囲外の判定を変更
 		const bool hasNegativeScrollSpeed = highwayScrollContext.hasNegativeScrollSpeed();
 
-		const int32 numColumns = isBT ? kNumTextureColumnsMainSub : 1; // ロングBTノーツの場合はinvMultiply用のテクスチャ列が追加で存在する
+		const int32 numColumns = isBT && !eraseFX ? kNumTextureColumnsMainSub : 1; // ロングBTノーツの場合はinvMultiply用のテクスチャ列が追加で存在する
 
 		// レンダーターゲットとブレンドステートの切り替えはノーツ単位で行うと描画バッチが分断されるため、テクスチャ列単位でまとめる
 		for (int32 i = 0; i < numColumns; ++i)
 		{
-			const ScopedRenderTarget2D renderTarget((i == 0) ? target.additiveTexture() : target.invMultiplyTexture());
-			const ScopedRenderStates2D blendState((i == 0) ? (isBT ? BlendState::Additive : BlendState::Default2D) : BlendState::Subtractive);
+			const ScopedRenderTarget2D renderTarget((i == 0) ? additiveTarget : invMultiplyTarget);
+			const BlendState noteBlend = (i == 0) ? (isBT ? BlendState{ BlendState::Additive } : kFXAlphaBlend) : BlendState{ BlendState::Subtractive };
+			const ScopedRenderStates2D blendState(eraseFX ? kEraseFXBlend : noteBlend);
 
 			for (std::size_t laneIdx = 0; laneIdx < numLanes; ++laneIdx)
 			{
@@ -216,12 +224,12 @@ namespace MusicGame::Graphics
 
 	void ButtonNoteGraphics::drawLongBTNotes(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target) const
 	{
-		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target, true);
+		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target.additiveTexture(), target.invMultiplyTexture(), true);
 	}
 
 	void ButtonNoteGraphics::drawLongFXNotes(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target) const
 	{
-		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target, false);
+		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target.additiveTexture(), target.invMultiplyTexture(), false);
 	}
 
 	ButtonNoteGraphics::ButtonNoteGraphics()
@@ -253,5 +261,20 @@ namespace MusicGame::Graphics
 		drawLongBTNotes(chartData, gameStatus, viewStatus, highwayScrollContext, target);
 		drawChipFXNotes(chartData, viewStatus, playOption, highwayScrollContext, target);
 		drawChipBTNotes(chartData, viewStatus, playOption, highwayScrollContext, target);
+	}
+
+	void ButtonNoteGraphics::drawBT(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const HighwayRenderTexture& target) const
+	{
+		drawLongBTNotes(chartData, gameStatus, viewStatus, highwayScrollContext, target);
+		drawChipBTNotes(chartData, viewStatus, playOption, highwayScrollContext, target);
+	}
+
+	void ButtonNoteGraphics::drawUninvertedFX(const kson::ChartData& chartData, const GameStatus& gameStatus, const ViewStatus& viewStatus, const PlayOption& playOption, const Scroll::HighwayScrollContext& highwayScrollContext, const RenderTexture& target) const
+	{
+		// 通常描画と同じ重なり順を再現し、BTの手前へFXが重ならないようにする。
+		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target, target, false);
+		drawLongNotesCommon(chartData, gameStatus, viewStatus, highwayScrollContext, target, target, true, true);
+		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target, false);
+		drawChipNotesCommon(chartData, viewStatus, playOption, highwayScrollContext, target, true, true);
 	}
 }

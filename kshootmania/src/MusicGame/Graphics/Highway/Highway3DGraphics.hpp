@@ -18,6 +18,7 @@ namespace MusicGame::Graphics
 
 		const HighwayRenderTexture m_renderTexture;
 		mutable Optional<HighwayRenderTexture> m_laserRenderTexture;
+		mutable Optional<RenderTexture> m_fxRenderTexture;
 
 		const ButtonNoteGraphics m_buttonNoteGraphics;
 		const LaserNoteGraphics m_laserNoteGraphics;
@@ -37,6 +38,6 @@ namespace MusicGame::Graphics
 
 		void draw3D(const ViewStatus& viewStatus) const;
 
-		void drawLasers3D(const ViewStatus& viewStatus) const;
+		void drawUninvertedNotes3D(const ViewStatus& viewStatus) const;
 	};
 }

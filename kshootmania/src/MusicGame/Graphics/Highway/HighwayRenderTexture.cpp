@@ -7,6 +7,8 @@ namespace MusicGame::Graphics
 	namespace
 	{
 		constexpr StringView kBaseTextureFilename = U"base.gif";
+		constexpr double kToggledLaneGray = 64.0 / 255.0;
+		constexpr double kToggledLaneOpacity = 0.4;
 
 		RenderTexture CreateBaseTexture(int32 column, const Color& clearColor)
 		{
@@ -63,24 +65,37 @@ namespace MusicGame::Graphics
 		return m_invMultiplyTexture;
 	}
 
-	void HighwayRenderTexture::clearHiddenLane(double hiddenRatio) const
+	void HighwayRenderTexture::applyLaneToggle(double transitionRatio, double centerSplit) const
 	{
-		if (hiddenRatio <= 0.0)
+		if (transitionRatio <= 0.0)
 		{
 			return;
 		}
 
-		// 奥から判定ラインへ向かってレーンと光沢を消す。黒は両ブレンド方式の中立色。
+		// 奥から判定ラインへ向かって、レーンと光沢を半透明の暗い灰色へ置き換える。
 		// 小節線・ノーツ・キービームはこの処理の後に描画する。
-		const RectF hiddenArea{ 0, 0, kHighwayTextureSizeWide.x, kHighwayTextureSize.y * Clamp(hiddenRatio, 0.0, 1.0) };
+		const double height = kHighwayTextureSize.y * Clamp(transitionRatio, 0.0, 1.0);
+		const RectF clearedArea{ 0, 0, kHighwayTextureSizeWide.x, height };
+		const double halfWidth = kHighwayTextureSize.x / 2.0;
+		const double centerSplitShiftX = Camera::CenterSplitShiftX(centerSplit);
+		const RectF leftLane{ kHighwayTextureOffsetX - centerSplitShiftX, 0, halfWidth, height };
+		const RectF rightLane{ kHighwayTextureOffsetX + halfWidth + centerSplitShiftX, 0, halfWidth, height };
+
+		// 乗算側に不透明度、加算側に灰色×不透明度を書き込み、背景とのアルファ合成を再現する。
 		const ScopedRenderStates2D renderState(BlendState::Opaque);
 		{
 			const ScopedRenderTarget2D renderTarget(m_additiveTexture);
-			hiddenArea.draw(Palette::Black);
+			clearedArea.draw(Palette::Black);
+			const ColorF color{ kToggledLaneGray * kToggledLaneOpacity };
+			leftLane.draw(color);
+			rightLane.draw(color);
 		}
 		{
 			const ScopedRenderTarget2D renderTarget(m_invMultiplyTexture);
-			hiddenArea.draw(Palette::Black);
+			clearedArea.draw(Palette::Black);
+			const ColorF color{ kToggledLaneOpacity };
+			leftLane.draw(color);
+			rightLane.draw(color);
 		}
 	}
 

@@ -37,11 +37,12 @@ A valid explicit option takes precedence over comments for the same command at t
 ## Effect: lane_toggle
 
 The chart body supports USC-compatible `lane_toggle=<duration>` commands.
-Each command alternates between hiding and showing the lane background, with a wipe from the far end of the lane.
+Each command alternates between a translucent dark-gray lane background and the original lane skin, with a wipe from the far end of the lane.
+The toggled background uses dark gray (#404040) at 40% opacity, allowing the background to remain visible through the lane. Center-split lanes retain their separated shape.
 Notes, measure lines, judgment effects, and scoring remain active.
 
 The duration is measured in 1/192 of a whole note, using the BPM at the command position.
-For example, `lane_toggle=50` takes approximately 0.521 seconds at 120 BPM; the next `lane_toggle=50` restores the lane.
+For example, `lane_toggle=50` takes approximately 0.521 seconds at 120 BPM; the next `lane_toggle=50` restores the original lane skin.
 Use `lane_toggle=0` for an immediate change. Place commands before the note row where the transition should begin.
 The same commands are supported in KSON charts through `compat.ksh_unknown.option.lane_toggle`.
 
@@ -49,7 +50,7 @@ The same commands are supported in KSON charts through `compat.ksh_unknown.optio
 
 Place `color_invert=<duration>` before a note row to toggle color inversion.
 The inverted area expands as a circle from the exact center of the screen; the next command shrinks it back toward the center.
-Backgrounds, lanes, and BT/FX notes are inverted. HUD, judgment indicators, laser notes, and laser cursors retain their original colors.
+Backgrounds, lanes, and BT notes are inverted. FX chip notes (including key-sound chips), FX long notes, HUD, judgment indicators, laser notes, and laser cursors retain their original colors.
 
 Timing uses the same units and event BPM as `lane_toggle`: `color_invert=50` takes approximately 0.521 seconds at 120 BPM.
 Use `color_invert=0` for an immediate toggle. Both commands operate independently and support seeking and playback speed changes.
